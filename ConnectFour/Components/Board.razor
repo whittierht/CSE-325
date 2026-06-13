@@ -1,0 +1,120 @@
+@using System.Drawing
+@inject GameState State
+
+<HeadContent>
+    <style>
+        :root {
+            --board-bg: @ColorTranslator.ToHtml(BoardColor);
+            --player1: @ColorTranslator.ToHtml(Player1Color);
+            --player2: @ColorTranslator.ToHtml(Player2Color);
+        }
+    </style>
+</HeadContent>
+
+<nav>
+    @for (var i = 0; i < 7; i++)
+    {
+        var column = i;
+        <span title="Click to play a piece" @onclick="() => PlayPiece(column)">&#128317;</span>
+    }
+</nav>
+
+<div class="game-info">
+    @if (winner == GameState.WinState.No_Winner)
+    {
+        <span>Player @State.PlayerTurn's Turn</span>
+    }
+    else if (winner == GameState.WinState.Player1_Wins)
+    {
+        <span>Player 1 Wins!</span>
+    }
+    else if (winner == GameState.WinState.Player2_Wins)
+    {
+        <span>Player 2 Wins!</span>
+    }
+    else
+    {
+        <span>The game is a tie.</span>
+    }
+
+    <button @onclick="ResetGame">Reset the game</button>
+</div>
+
+<div>
+    @foreach (var piece in pieces)
+    {
+        <span class="@piece"></span>
+    }
+
+    <div class="board">
+        @for (var i = 0; i < 42; i++)
+        {
+            <span class="container">
+                <span></span>
+            </span>
+        }
+    </div>
+</div>
+
+<div class="move-history">
+    <h3>Move History</h3>
+    @if (State.Moves.Count == 0)
+    {
+        <p>No moves yet.</p>
+    }
+    else
+    {
+        <ol>
+            @foreach (var move in State.Moves)
+            {
+                <li>Player @move.Player: Column @move.Column, Row @move.Row</li>
+            }
+        </ol>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Color BoardColor { get; set; } = ColorTranslator.FromHtml("yellow");
+
+    [Parameter]
+    public Color Player1Color { get; set; } = ColorTranslator.FromHtml("red");
+
+    [Parameter]
+    public Color Player2Color { get; set; } = ColorTranslator.FromHtml("blue");
+
+    private GameState.WinState winner = GameState.WinState.No_Winner;
+    private List<string> pieces = new();
+
+    protected override void OnInitialized()
+    {
+        ResetGame();
+    }
+
+    private void PlayPiece(int column)
+    {
+        if (winner != GameState.WinState.No_Winner)
+        {
+            return;
+        }
+
+        var player = State.PlayerTurn;
+
+        try
+        {
+            var row = State.PlayPiece(column);
+            pieces.Add($"player{player} col{column} drop{row}");
+            winner = State.CheckForWin();
+        }
+        catch (ArgumentException)
+        {
+        }
+    }
+
+    private void ResetGame()
+    {
+        State.ResetBoard();
+        winner = GameState.WinState.No_Winner;
+        pieces = new List<string>();
+    }
+}
